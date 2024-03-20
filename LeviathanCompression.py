@@ -2,30 +2,26 @@ import os
 import sys
 import glob
 from tkinter import filedialog
-from PIL import Image, ImageFile
+# from PIL import Image, ImageFile
 from pathlib import Path
-from timeit import default_timer as timer
+import cv2
+from joblib import Parallel, delayed
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
 open_file = filedialog.askdirectory()
 
-maxRes = sys.argv[1]
 
-try:
-    maxRes = int(maxRes)
-except Exception:
-    maxRes = 4096
+def joblib_loop(i):
+    file_path = images[i]
+    try:
+        original_image = cv2.imread(file_path)
+        cv2.imwrite(file_path, original_image, [cv2.IMWRITE_PNG_COMPRESSION, 9])
+        print("Compressed: " + os.path.basename(file_path))
+    except Exception as e:
+        print(e)
 
+
+images = []
 for file in glob.iglob(open_file+"/**", recursive=True):
     if file.endswith(".png"):
-        filesize = round(Path(file).stat().st_size / 1024)
-        print("Before: " + os.path.basename(file) + " {}MB".format(round(filesize/1024, 2)))
-        start = timer()
-        originalImage = Image.open(file)
-        width, height = originalImage.size
-        if width > maxRes:
-            originalImage = originalImage.resize((maxRes, maxRes))
-        originalImage.save(file, "PNG", optimize=True)
-        newFilesize = round(Path(file).stat().st_size) / 1024
-        end = timer()
-        print("After: " + os.path.basename(file) + " {}MB {}% Difference {} Seconds Taken".format(round(newFilesize/1024, 2), round(abs(((newFilesize - filesize) / filesize) * 100)), round(end-start, 2)))
+        images.append(file)
+results = Parallel(n_jobs=-2)(delayed(joblib_loop)(i) for i in range(len(images)))
