@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 from tkinter import filedialog
 from PIL import Image, ImageFile
@@ -8,6 +9,12 @@ from timeit import default_timer as timer
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 open_file = filedialog.askdirectory()
 
+maxRes = sys.argv[1]
+
+try:
+    maxRes = int(maxRes)
+except Exception:
+    maxRes = 4096
 
 for file in glob.iglob(open_file+"/**", recursive=True):
     if file.endswith(".png"):
@@ -16,8 +23,8 @@ for file in glob.iglob(open_file+"/**", recursive=True):
         start = timer()
         originalImage = Image.open(file)
         width, height = originalImage.size
-        if width > 1024:
-            originalImage = originalImage.resize((1024, 1024))
+        if width > maxRes:
+            originalImage = originalImage.resize((maxRes, maxRes))
         originalImage.save(file, "PNG", optimize=True)
         newFilesize = round(Path(file).stat().st_size) / 1024
         end = timer()
